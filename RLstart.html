@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romeo and Juliet Flashcards</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the flashcard flip effect */
+        .flashcard-container {
+            perspective: 1000px; /* Gives depth for the 3D flip effect */
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 300px; /* Fixed height for consistency */
+            position: relative;
+            transform-style: preserve-3d; /* Ensures children are positioned in 3D space */
+            transition: transform 0.6s; /* Smooth transition for the flip */
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden; /* Hides the back face when not facing the user */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem; /* Equivalent to p-6 */
+            border-radius: 0.75rem; /* Equivalent to rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Equivalent to shadow-lg */
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+            overflow-wrap: break-word; /* Ensures long text wraps */
+            word-wrap: break-word; /* Legacy support */
+            hyphens: auto; /* Allows hyphens for better wrapping */
+        }
+
+        .flashcard-front {
+            background-color: #fef2f2; /* Red-100 */
+            color: #b91c1c; /* Red-700 */
+            border: 2px solid #ef4444; /* Red-500 */
+            font-weight: 600; /* Equivalent to font-semibold */
+            font-size: 1.5rem; /* Equivalent to text-2xl */
+        }
+
+        .flashcard-back {
+            background-color: #ecfdf5; /* Green-50 */
+            color: #065f46; /* Green-800 */
+            border: 2px solid #10b981; /* Green-500 */
+            transform: rotateY(180deg); /* Initially rotated to be the back face */
+            font-size: 1.25rem; /* Equivalent to text-xl */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .flashcard {
+                height: 250px;
+            }
+            .flashcard-front {
+                font-size: 1.25rem; /* text-xl on small screens */
+            }
+            .flashcard-back {
+                font-size: 1rem; /* text-lg on small screens */
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-pink-100 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-gray-200">
+        <h1 class="text-3xl font-extrabold text-center text-gray-900 mb-6">
+            Romeo and Juliet Flashcards
+        </h1>
+
+        <div class="flashcard-container flex justify-center items-center">
+            <div id="flashcard" class="flashcard">
+                <div class="flashcard-face flashcard-front" id="flashcard-front"></div>
+                <div class="flashcard-face flashcard-back" id="flashcard-back"></div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center mt-6">
+            <button id="prevBtn" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                Previous
+            </button>
+            <span id="cardCounter" class="text-lg font-medium text-gray-700"></span>
+            <button id="nextBtn" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                Next
+            </button>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Generate New Flashcard ✨</h2>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input type="text" id="newCardTopic" placeholder="e.g., Theme of love, Mercutio"
+                       class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm text-gray-700">
+                <button id="generateCardBtn"
+                        class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150 flex items-center justify-center">
+                    Generate
+                </button>
+            </div>
+            <p id="loadingIndicator" class="text-center text-sm text-gray-500 mt-2 hidden">Generating...</p>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Explain a Quote ✨</h2>
+            <div class="flex flex-col gap-4">
+                <textarea id="quoteInput" placeholder="Paste a quote from Romeo and Juliet here..."
+                          class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm text-gray-700 h-24 resize-y"></textarea>
+                <button id="explainQuoteBtn"
+                        class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 flex items-center justify-center">
+                    Explain Quote
+                </button>
+            </div>
+            <p id="quoteLoadingIndicator" class="text-center text-sm text-gray-500 mt-2 hidden">Explaining...</p>
+            <div id="quoteExplanation" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-800 hidden">
+                <!-- Explanation will be displayed here -->
+            </div>
+        </div>
+
+        <!-- Message Box for alerts - replacing alert() -->
+        <div id="messageBox" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+            <div class="relative p-6 bg-white rounded-lg shadow-xl max-w-sm mx-auto text-center">
+                <p id="messageText" class="text-gray-800 text-lg mb-4"></p>
+                <button id="closeMessageBox" class="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none">
+                    OK
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Array of flashcard data (questions and answers)
+        const flashcards = [
+            {
+                question: "Who is Romeo's first love interest mentioned in the play?",
+                answer: "Rosaline"
+            },
+            {
+                question: "What family does Romeo belong to?",
+                answer: "Montague"
+            },
+            {
+                question: "What family does Juliet belong to?",
+                answer: "Capulet"
+            },
+            {
+                question: "Who is Juliet's cousin?",
+                answer: "Tybalt"
+            },
+            {
+                question: "Who attempts to break up the initial street brawl?",
+                answer: "Benvolio"
+            },
+            {
+                question: "Who hosts the party where Romeo and Juliet first meet?",
+                answer: "Lord Capulet"
+            },
+            {
+                question: "Who secretly marries Romeo and Juliet?",
+                answer: "Friar Laurence"
+            },
+            {
+                question: "Who is the Prince of Verona?",
+                answer: "Prince Escalus"
+            },
+            {
+                question: "What is the name of the nurse who acts as Juliet's confidante?",
+                answer: "The Nurse"
+            },
+            {
+                question: "Who kills Tybalt?",
+                answer: "Romeo"
+            },
+            {
+                question: "Who kills Mercutio?",
+                answer: "Tybalt"
+            },
+            {
+                question: "What is Romeo's punishment for killing Tybalt?",
+                answer: "Banishment from Verona"
+            },
+            {
+                question: "What potion does Friar Laurence give Juliet?",
+                answer: "A sleeping potion that makes her appear dead"
+            },
+            {
+                question: "Who fails to deliver Friar Laurence's letter to Romeo?",
+                answer: "Friar John"
+            },
+            {
+                question: "How does Romeo die?",
+                answer: "He drinks poison."
+            },
+            {
+                question: "How does Juliet die?",
+                answer: "She stabs herself with Romeo's dagger."
+            },
+            {
+                question: "What theme is highlighted by the feuding families?",
+                answer: "Conflict and Hatred"
+            },
+            {
+                question: "What literary device is used when the audience knows something the characters do not, such as Juliet's fake death?",
+                answer: "Dramatic Irony"
+            },
+            {
+                question: "What is the primary setting of the play?",
+                answer: "Verona, Italy"
+            },
+            {
+                question: "Who is Paris?",
+                answer: "A kinsman of the Prince, who wishes to marry Juliet."
+            }
+        ];
+
+        let currentCardIndex = 0;
+        const flashcardElement = document.getElementById('flashcard');
+        const flashcardFront = document.getElementById('flashcard-front');
+        const flashcardBack = document.getElementById('flashcard-back');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const cardCounter = document.getElementById('cardCounter');
+        const newCardTopicInput = document.getElementById('newCardTopic');
+        const generateCardBtn = document.getElementById('generateCardBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const quoteInput = document.getElementById('quoteInput');
+        const explainQuoteBtn = document.getElementById('explainQuoteBtn');
+        const quoteLoadingIndicator = document.getElementById('quoteLoadingIndicator');
+        const quoteExplanation = document.getElementById('quoteExplanation');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const closeMessageBox = document.getElementById('closeMessageBox');
+
+        /**
+         * Shows a custom message box instead of `alert()`.
+         * @param {string} message - The message to display.
+         */
+        function showMessageBox(message) {
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the custom message box.
+         */
+        function hideMessageBox() {
+            messageBox.classList.add('hidden');
+        }
+
+        closeMessageBox.addEventListener('click', hideMessageBox);
+
+
+        /**
+         * Displays the current flashcard based on the currentCardIndex.
+         */
+        function displayCard() {
+            // Ensure card is flipped to front before displaying new content
+            flashcardElement.classList.remove('flipped');
+            // Give a small delay to allow the flip animation to start before content changes
+            setTimeout(() => {
+                if (flashcards.length > 0) {
+                    flashcardFront.textContent = flashcards[currentCardIndex].question;
+                    flashcardBack.textContent = flashcards[currentCardIndex].answer;
+                    cardCounter.textContent = `${currentCardIndex + 1} / ${flashcards.length}`;
+                } else {
+                    flashcardFront.textContent = "No flashcards available.";
+                    flashcardBack.textContent = "Please add some cards.";
+                    cardCounter.textContent = "0 / 0";
+                }
+            }, 300); // Half of the transition duration
+        }
+
+        /**
+         * Toggles the 'flipped' class on the flashcard element.
+         */
+        flashcardElement.addEventListener('click', () => {
+            flashcardElement.classList.toggle('flipped');
+        });
+
+        /**
+         * Navigates to the next flashcard.
+         */
+        nextBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent the card from flipping when clicking button
+            if (currentCardIndex < flashcards.length - 1) {
+                currentCardIndex++;
+                displayCard();
+            } else {
+                showMessageBox("You've reached the end of the flashcards!");
+            }
+        });
+
+        /**
+         * Navigates to the previous flashcard.
+         */
+        prevBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent the card from flipping when clicking button
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                displayCard();
+            } else {
+                showMessageBox("You're at the beginning of the flashcards!");
+            }
+        });
+
+        /**
+         * Generates a new flashcard using the Gemini API based on user input.
+         */
+        generateCardBtn.addEventListener('click', async () => {
+            const topic = newCardTopicInput.value.trim();
+            if (!topic) {
+                showMessageBox("Please enter a topic to generate a flashcard.");
+                return;
+            }
+
+            loadingIndicator.classList.remove('hidden');
+            generateCardBtn.disabled = true; // Disable button during generation
+
+            try {
+                let chatHistory = [];
+                const prompt = `Generate a flashcard (question and answer) about Romeo and Juliet. The question should be specifically about "${topic}". Provide the output in JSON format with 'question' and 'answer' fields. The answer should be concise.`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "question": { "type": "STRING" },
+                                "answer": { "type": "STRING" }
+                            },
+                            "propertyOrdering": ["question", "answer"]
+                        }
+                    }
+                };
+
+                const apiKey = ""; // Canvas will automatically provide the API key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('API Error Response:', errorData);
+                    throw new Error(`API request failed with status ${response.status}: ${errorData.error.message || 'Unknown error'}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const newCard = JSON.parse(jsonString);
+
+                    if (newCard.question && newCard.answer) {
+                        flashcards.push(newCard);
+                        currentCardIndex = flashcards.length - 1; // Go to the newly added card
+                        displayCard();
+                        newCardTopicInput.value = ''; // Clear input field
+                    } else {
+                        showMessageBox("Generated content was not in the expected format. Please try again.");
+                    }
+                } else {
+                    showMessageBox("Could not generate a new flashcard. Please try again or rephrase your topic.");
+                }
+
+            } catch (error) {
+                console.error("Error generating flashcard:", error);
+                showMessageBox(`Failed to generate flashcard: ${error.message}. Please try again.`);
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                generateCardBtn.disabled = false; // Re-enable button
+            }
+        });
+
+        /**
+         * Explains a quote using the Gemini API.
+         */
+        explainQuoteBtn.addEventListener('click', async () => {
+            const quote = quoteInput.value.trim();
+            if (!quote) {
+                showMessageBox("Please paste a quote to explain.");
+                return;
+            }
+
+            quoteLoadingIndicator.classList.remove('hidden');
+            explainQuoteBtn.disabled = true; // Disable button during explanation
+
+            try {
+                let chatHistory = [];
+                const prompt = `Explain the following quote from Shakespeare's Romeo and Juliet, providing its meaning and context within the play. Keep the explanation concise and to the point:\n\n"${quote}"`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    // No responseSchema needed for a plain text response
+                };
+
+                const apiKey = ""; // Canvas will automatically provide the API key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('API Error Response:', errorData);
+                    throw new Error(`API request failed with status ${response.status}: ${errorData.error.message || 'Unknown error'}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const explanationText = result.candidates[0].content.parts[0].text;
+                    quoteExplanation.textContent = explanationText;
+                    quoteExplanation.classList.remove('hidden');
+                } else {
+                    showMessageBox("Could not generate an explanation for the quote. Please try again or provide a different quote.");
+                    quoteExplanation.classList.add('hidden');
+                }
+
+            } catch (error) {
+                console.error("Error explaining quote:", error);
+                showMessageBox(`Failed to explain quote: ${error.message}. Please try again.`);
+                quoteExplanation.classList.add('hidden');
+            } finally {
+                quoteLoadingIndicator.classList.add('hidden');
+                explainQuoteBtn.disabled = false; // Re-enable button
+            }
+        });
+
+
+        // Initial display of the first card when the page loads
+        document.addEventListener('DOMContentLoaded', displayCard);
+    </script>
+</body>
+</html>
